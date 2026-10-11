@@ -41,3 +41,5 @@ class StreamEvent:
     error : str | None = None 
     finish_reason : str | None = None 
     uasge : TokenUsage | None = None
+
+

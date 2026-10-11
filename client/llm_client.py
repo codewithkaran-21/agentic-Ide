@@ -23,16 +23,16 @@ class LLMClient:
 
     async def chat_completion(self , messages : list[dict[str,Any]] , stream : bool = True) -> AsyncGenerator[StreamEvent , None]:
 
+
+        client = self.get_client()
+        
+        kwargs = {
+            "model": "",
+            "messages": messages,
+            "stream": stream,
+        }
         for attempt in range(self._max_retries + 1):
             try:
-
-                client = self.get_client()
-
-                kwargs = {
-                    "model": "",
-                    "messages": messages,
-                    "stream": stream,
-                }
 
                 if stream:
                     async for event in self._stream_response(client , kwargs):
@@ -41,7 +41,6 @@ class LLMClient:
                 else:
                     event = await self._non_stream_response(client , kwargs)
                     yield event
-
                 return 
             except RateLimitError as e:
                 if attempt < self._max_retries:
@@ -78,7 +77,6 @@ class LLMClient:
                     type = EventType.ERROR,
                     error = f"API Error : {e}",
                 )
-
                 return
 
             
