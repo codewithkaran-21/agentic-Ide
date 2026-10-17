@@ -9,7 +9,7 @@ from utils.text import count_tokens
 class MessageItem:
     role : str
     content : str 
-    token : int | None = None
+    token_count : int | None = None
 
     def to_dict(self) -> dict[str,Any]:
         result : dict[str,Any] = {"role":self.role}

@@ -9,11 +9,12 @@ from context.manager import ContextManager
 class Agent:
     def __init__(self):
         self.client = LLMClient()
-        self.conetxt_manager = ContextManager()
+        self.context_manager = ContextManager()
 
     async def run(self , message : str) :
         yield AgentEvent.agent_start(message)
         # add user messaged to context
+        self.context_manager.add_user_message(message)
 
         final_response : str | None = None
 
@@ -26,10 +27,9 @@ class Agent:
         yield AgentEvent.agent_end(final_response)
 
     async def _agentic_loop(self) -> AsyncGenerator[AgentEvent , None]:
-        messages = {"role" : "user", "content" : "Hay What's going on?"}
 
         response_text = ""
-        async for event in self.client.chat_completion(messages,True):
+        async for event in self.client.chat_completion(self.conetxt_manager.get_messages(),True):
             if event.type == StreamEventType.TEXT_DELTA:
                 content = event.text_delta.content
 
@@ -37,9 +37,12 @@ class Agent:
                 yield AgentEvent.text_delta(content)
             elif event.type == StreamEventType.ERROR:
                 yield AgentEvent.error(event.error or "Unknown error occurred.")
+        self.conetxt_manager.add_assistant_message(
+            response_text or None
+        )
 
-            if response_text:
-                yield AgentEvent.text_complete(response_text)
+        if response_text:
+            yield AgentEvent.text_complete(response_text)
 
     async def __aenter__(self) -> Agent:
         return self 
