@@ -2,12 +2,14 @@ from __future__ import annotations
 from typing import AsyncGenerator
 from agent.events import AgentEvent , AgentEventType
 from client import LLMClient
-from client.response import StreamEventType 
+from client.response import StreamEventType
+from context.manager import ContextManager 
 
 
 class Agent:
     def __init__(self):
         self.client = LLMClient()
+        self.conetxt_manager = ContextManager()
 
     async def run(self , message : str) :
         yield AgentEvent.agent_start(message)
