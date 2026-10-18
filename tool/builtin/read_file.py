@@ -53,10 +53,14 @@ class ReadFileTool(Tool):
                 f"Maximum file size {self.MAX_FILE_SIZE / (1024*1024):.0f}MB"
             )
 
-        if is_bianry_file():
+        if is_bianry_file(path):
             file_size_mb = file_size / (1024*1024)
             size_str = (
                 f"{file_size_mb:.2f}MB" if file_size_mb >= 1 else f"{file_size} bytes"
+            )
+            return ToolResult.error_result(
+                f"Cannot read binary file: {path.name} ({size_str}) "
+                f"This tool only reads text files."
             )
 
         try:

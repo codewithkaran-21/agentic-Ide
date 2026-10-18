@@ -43,7 +43,7 @@ def _truncate_by_lines(text : str , target_tokens : int , suffix : str , model :
     current_tokens = 0
 
     for line in lines:
-        line_tokens = count_tokens(line + "\n" model)
+        line_tokens = count_tokens(line + "\n", model)
         if current_tokens + line_tokens > target_tokens:
             break
 
