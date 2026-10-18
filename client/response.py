@@ -1,6 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass 
 from enum import Enum 
+import json
+from typing import Any
 
 @dataclass
 class TextDelta:
@@ -13,13 +15,13 @@ class TextDelta:
 class ToolCallDelta:
     call_id : str 
     name : str | None = None
-    arguments_delta : str or ""
+    arguments_delta : str = ""
  
 @dataclass
 class ToolCall:
     call_id : str 
     name : str | None = None
-    arguments_delta : str or ""
+    arguments_delta : str = ""
  
 
 
@@ -60,4 +62,27 @@ class StreamEvent:
     tool_Call : ToolCall | None = None 
     usage : TokenUsage | None = None
 
+@dataclass
+class ToolResultMessage:
+    tool_call_id : str 
+    content : str 
+    is_error : bool = False
+
+    
+    def to_openai_message(self) -> dict[str,Any]:
+        return {
+            "role":"tool",
+            "tool_call_id":self.tool_call_id,
+            "content":self.content,
+        }
+
+
+def parse_tool_call_arguments(arguments_str : str) -> dict[str,Any]:
+    if not arguments_str:
+        return {}
+
+    try:
+        return json.loads(arguments_str)
+    except json.JSONDecodeError:
+        return {"raw_arguments":arguments_str}
 
