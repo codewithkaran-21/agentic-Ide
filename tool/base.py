@@ -4,7 +4,8 @@ from  enum import Enum
 from pathlib import Path
 from typing import Any
 from dataclasses import dataclass, field
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError 
+from pydantic.json_schema import model_json_schema , json_schema
 
 @dataclass
 class ToolInvocation:
@@ -18,12 +19,24 @@ class ToolResult:
     error : str | None = None 
     metadata : dict[str , Any] = field(default_factory=dict)
 
+    @classmethod
+    def error_result(
+        cls ,
+        error : str ,
+        output : str = ""
+    ):
+        return cls(
+            success = False,
+            output = output,
+            error = error
+        )
+
 @dataclass
 class ToolConfirmation:
     tool_name : str 
     params : dict[str,Any]
     description : str 
-    
+
 
 class ToolKind(str , Enum):
     READ = "read"
@@ -79,8 +92,44 @@ class Tool(abc.ABC):
     async def get_confirmation(self , invocation : ToolInvocation) -> ToolInvocation | None : 
         if not self.is_mutating(invocation.params):
             return None 
-        return ToolConfirmation()
+        return ToolConfirmation(
+            tool_name=self.name,
+            params = invocation.params,
+            description = f"Execute {self.name}"
+        )
 
+    def to_openai_schema(self) -> dict[str,Any]:
+        schema = self.schema
+
+        if isinstance(schema , type) and issubclass(schema , BaseModel):
+            model_json_schema(schema , mode = "serialization")
+
+            return {
+                "name":self.name,
+                "desacription":self.description,
+                "parameters":{
+                    "type":"object",
+                    "properties":json_schema.get("prperties",{}),
+                    "required": json_schema.get("required",[])
+                }
+            }
+
+        if isinstance(schema , dict):
+            result = { 
+                "name": self.name,
+                "description" : self.description
+            }
+
+            if "parameters" in schema:
+                result["parameters"] = schema["parameters"]
+
+            else:
+                result["parameters"] = schema
+
+            return  result
+        raise ValueError(f"Inavalid schma type or tool {self.name}: {type(schema)}")
+
+    
 
 
 
