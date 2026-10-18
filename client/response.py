@@ -9,11 +9,29 @@ class TextDelta:
     def __str__(self):
         return self.content
 
+@dataclass
+class ToolCallDelta:
+    call_id : str 
+    name : str | None = None
+    arguments_delta : str or ""
+ 
+@dataclass
+class ToolCall:
+    call_id : str 
+    name : str | None = None
+    arguments_delta : str or ""
+ 
+
+
 
 class StreamEventType(str,Enum):
     TEXT_DELTA =  "text_delta"
     MESSAGE_COMPLETE  = "message_complete"
     ERROR = "error"
+
+    TOOL_CALL_START = "tool_Call_start" 
+    TOOL_CALL_DELTA = "tool_call_delta"
+    TOOL_CALL_FINISH = "tool_call_finish"
 
 
 @dataclass
@@ -38,6 +56,8 @@ class StreamEvent:
     text_delta : TextDelta | None = None
     error : str | None = None 
     finish_reason : str | None = None 
+    tool_call_delta : ToolCallDelta | None = None 
+    tool_Call : ToolCall | None = None 
     usage : TokenUsage | None = None
 
 
