@@ -31,7 +31,7 @@ class ContextManager:
     def __init__(self) -> None:
         self._system_prompt = get_system_prompt()
         self._model_name = ""
-        self._messaqges : list[MessageItem] = []
+        self._messages : list[MessageItem] = []
 
     def add_user_message(self , content : str) -> None:
         item = MessageItem(
@@ -41,7 +41,7 @@ class ContextManager:
                                self._model_name)
         )
 
-        self._messaqges.append(item)
+        self._messages.append(item)
 
     def add_assistant_message(self , content : str) -> None:
         item = MessageItem(

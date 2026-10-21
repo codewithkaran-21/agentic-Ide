@@ -47,7 +47,7 @@ class ToolResult:
             **kwargs,
         )
 
-    @classmethod
+    
     def to_model_output(self) -> str:
         if self.success:
             return self.output
