@@ -8,6 +8,17 @@ def resolve_path(base : str | Path , path : str | None):
 
     return Path(base).resolve() / path
 
+def dispaly_path_rel_to_cwd(path : str , cwd : Path | None) -> str:
+    try:
+        p = Path(cwd)
+
+    except Exception:
+        return path
+    if cwd:
+        return p.relative_to(cwd)
+
+    return str(p)
+
 
 def is_bianry_file(path : str | Path) -> bool:
     try:
