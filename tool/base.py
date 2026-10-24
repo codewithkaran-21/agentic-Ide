@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Any
 from dataclasses import dataclass, field
 from pydantic import BaseModel, ValidationError 
-from pydantic.json_schema import model_json_schema , json_schema
+from pydantic.json_schema import model_json_schema 
+from pydantic_core.core_schema import json_schema
 
 @dataclass
 class ToolInvocation:

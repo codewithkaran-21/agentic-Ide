@@ -188,6 +188,19 @@ class TUI:
             ".sql":"sql",
         }.get(suffix,"text")
 
+    def print_welcome(self, title: str, lines: list[str]) -> None:
+        body = "\n".join(lines)
+        self.console.print(
+            Panel(
+                Text(body, style="code"),
+                title=Text(title, style="highlight"),
+                title_align="left",
+                border_style="border",
+                box=box.ROUNDED,
+                padding=(1, 2),
+            )
+        )
+
     def tool_call_complete(self , call_id : str , name : str , tool_kind : str | None,
                           success: bool , output : str , error : str | None,
                            metadata : dict[str,Any] | None,
@@ -250,7 +263,6 @@ class TUI:
             title_align="left",
             subtitle=Text("done" if success else "failed", style=status_style),
             subtitle_align="right",
-            subtitle=Text("running",style="muted"),
             border_style=border_style,
             box=box.ROUNDED,
             padding=(1,2),

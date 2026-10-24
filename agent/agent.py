@@ -47,7 +47,20 @@ class Agent:
             elif event.type == StreamEventType.ERROR:
                 yield AgentEvent.error(event.error or "Unknown error occurred.")
         self.conetxt_manager.add_assistant_message(
-            response_text or None
+            response_text or None,
+            [
+                {
+                    "id":tc.call_id,
+                    "type":"function",
+                    "function":{
+                        "name":tc.name,
+                        "arguments":str(tc.arguments)
+                    }
+                }
+                for tc in tool_calls
+            ]
+            if tool_calls
+            else None
         )
 
         if response_text:

@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 import sys
 
 import click 
@@ -20,7 +21,15 @@ class CLI:
             self.agent = agent 
             return await self._process_message(message)
 
-    async def interactive(self) -> str | None:
+    async def run_interactive(self) -> str | None:
+        self.tui.print_welcome(
+            "Karan AI Agent",
+            lines=[
+                f"model: mistralai/devstral-2512:free",
+                f"cwd: {Path.cwd()}",
+                "commands /help /config /approval /model /exit",
+            ]
+        )
         async with Agent() as agent:
             self.agent = agent
             while True:
@@ -30,11 +39,11 @@ class CLI:
                         continue
                     return await self._process_message(user_input)
                 except KeyboardInterrupt:
-                    console.print("\n[dim]Use \exit to quit[/dim]")
+                    console.print("\n[dim]Use /exit to quit[/dim]")
 
                 except EOFError:
                     break
-        console.print()
+        console.print("\n[dim]Goodbye![/dim]")
             
         
     def get_tool_kind(self,tool_name:str) -> str | None:
@@ -106,6 +115,8 @@ def main(prompt : str | None, ):
         result = asyncio.run(cli.run_single(prompt))
         if result is None:
             sys.exit(1)
+        else:
+            asyncio.run(cli.run_interactive())
 main()
 
                 

@@ -21,7 +21,7 @@ class ToolCallDelta:
 class ToolCall:
     call_id : str 
     name : str | None = None
-    arguments_delta : str = ""
+    arguments : str = ""
  
 
 

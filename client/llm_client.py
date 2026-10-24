@@ -24,9 +24,20 @@ class LLMClient:
     def _build_tools(self , tools : list[dict[str , Any]]):
         return [
             {
-                "type":"function",
-                ""
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool.get("description", ""),
+                    "parameters": tool.get(
+                        "parameters",
+                        {
+                            "type": "object",
+                            "properties": {},
+                        },
+                    ),
+                },
             }
+            for tool in tools
         ]
 
     async def chat_completion(self , messages : list[dict[str,Any]] , tools : list[dict[str,Any]] | None = None, stream : bool = True) -> AsyncGenerator[StreamEvent , None]:
