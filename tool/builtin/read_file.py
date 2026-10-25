@@ -13,7 +13,7 @@ class ReadFileParams(BaseModel):
 
     offset : int = Field(1,
                          ge=1,
-                         desscription = "Line number to start reading from (1-Based) .Defaults to 1")
+                         description = "Line number to start reading from (1-Based) .Defaults to 1")
 
     limit : int = Field(None , 
                         ge=1,
@@ -118,8 +118,8 @@ class ReadFileTool(Tool):
                 header = " | ".join(metadata_lines) + "\n\n"
                 output = header + output
 
-            return ToolResult(
-                output = output,
+            return ToolResult.success_result(
+                output,
                 truncated = truncated,
                 metadata={
                     "path": str(path),
@@ -134,5 +134,3 @@ class ReadFileTool(Tool):
 
 
         
-
-

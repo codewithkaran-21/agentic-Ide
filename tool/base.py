@@ -5,8 +5,6 @@ from pathlib import Path
 from typing import Any
 from dataclasses import dataclass, field
 from pydantic import BaseModel, ValidationError 
-from pydantic.json_schema import model_json_schema 
-from pydantic_core.core_schema import json_schema
 
 @dataclass
 class ToolInvocation:
@@ -88,13 +86,13 @@ class Tool(abc.ABC):
         pass
 
     def validate_params(self , params : dict[str,Any]) -> list[str]:
-        schema = self.schema()
+        schema = self.schema
         if isinstance(schema,type) and issubclass(schema , BaseModel):
             try:
                 schema(**params)
             except ValidationError as e:
                 errors = []
-                for error in e.errors:
+                for error in e.errors():
                     field = ".".join(str(x) for x in error.get("loc",[]))
                     msg = error.get("msg","ValidationError")
                     errors.append(f"Parameter `{field}`:{msg}")
@@ -126,15 +124,15 @@ class Tool(abc.ABC):
         schema = self.schema
 
         if isinstance(schema , type) and issubclass(schema , BaseModel):
-            model_json_schema(schema , mode = "serialization")
+            model_schema = schema.model_json_schema(mode="serialization")
 
             return {
                 "name":self.name,
-                "desacription":self.description,
+                "description":self.description,
                 "parameters":{
                     "type":"object",
-                    "properties":json_schema.get("prperties",{}),
-                    "required": json_schema.get("required",[])
+                    "properties":model_schema.get("properties",{}),
+                    "required": model_schema.get("required",[])
                 }
             }
 

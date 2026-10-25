@@ -5,7 +5,7 @@ from pydantic import BaseModel , Field
 
 
 class ModelConfig(BaseModel):
-    name : str = "mistralai/devstral-2512:free"
+    name : str = "nvidia/nemotron-3.5-super-vl:free"
     temperature : float = Field(default=1,ge=0.0,le=2.0)
     context_window : int = 256_000
 
@@ -48,7 +48,7 @@ class Config(BaseModel):
         error : list[str] = [] 
 
         if not self.api_key:
-            error.appen("No API Key found, Set API_KEY environment variable")
+            error.append("No API Key found. Set API_KEY environment variable")
         if not self.cwd.exists():
             error.append(f"Working directory does not exist {self.cwd}")
 

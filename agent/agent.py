@@ -4,12 +4,14 @@ from typing import AsyncGenerator
 from agent.events import AgentEvent , AgentEventType
 from client import LLMClient
 from client.response import StreamEventType, ToolCall, ToolResultMessage
+from config.config import Config
 from context.manager import ContextManager 
 from tool.register import create_default_registry
 
 class Agent:
-    def __init__(self):
-        self.client = LLMClient()
+    def __init__(self , config : Config):
+        self.config = config
+        self.client = LLMClient(config=config)
         self.context_manager = ContextManager()
         self.tool_registry = create_default_registry()
 
@@ -34,7 +36,7 @@ class Agent:
         tool_schemas = self.tool_registry.get_schema()
         tool_calls : list[ToolCall] = []
 
-        async for event in self.client.chat_completion(self.conetxt_manager.get_messages(), tools = tool_schemas if tool_schemas else None ,stream=True):
+        async for event in self.client.chat_completion(self.context_manager .get_messages(), tools = tool_schemas if tool_schemas else None ,stream=True):
             if event.type == StreamEventType.TEXT_DELTA:
                 content = event.text_delta.content
                 response_text += content
@@ -45,8 +47,8 @@ class Agent:
                     tool_calls.append(event.tool_call)
 
             elif event.type == StreamEventType.ERROR:
-                yield AgentEvent.error(event.error or "Unknown error occurred.")
-        self.conetxt_manager.add_assistant_message(
+                yield AgentEvent.agent_error(event.error or "Unknown error occurred.")
+        self.context_manager .add_assistant_message(
             response_text or None,
             [
                 {
@@ -78,7 +80,7 @@ class Agent:
             result = await self.tool_registry.invoke(
                 tool_call.name,
                 tool_call.arguments,
-                Path.cwd,
+                self.config.cwd,
             )
 
             yield AgentEvent.tool_call_complete(

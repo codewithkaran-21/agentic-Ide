@@ -66,7 +66,7 @@ def _merge_dicts(base : dict[str,Any] , override : dict[str,Any]) -> dict[str,An
     return result
 
 
-def load_Config(cwd : Path | None) -> Config:
+def load_config(cwd : Path | None) -> Config:
     cwd = cwd or Path.cwd()
     config_dict: dict[str, Any] = {}
 

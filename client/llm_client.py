@@ -1,18 +1,20 @@
 import asyncio
 from typing import Any , AsyncGenerator
 from openai import APIConnectionError, APIError, AsyncOpenAI, RateLimitError 
-from response import TextDelta, TokenUsage , StreamEvent , StreamEventType, ToolCall, ToolCallDelta, parse_tool_call_arguments
+from config.config import Config
+from client.response import TextDelta, TokenUsage , StreamEvent , StreamEventType, ToolCall, ToolCallDelta, parse_tool_call_arguments
 
 class LLMClient:
-    def __init__(self) -> None:
+    def __init__(self , config : Config) -> None:
         self._client : AsyncOpenAI | None = None
         self._max_retries : int = 3
+        self.config = config
 
     def get_client(self) -> AsyncOpenAI:
         if self._client is None:
             self._client = AsyncOpenAI(
-                api_key = "",
-                base_url = "",
+                api_key = self.config.api_key,
+                base_url = self.config.base_url, # "https://openrouter.ai/api/v1"
             )
         return self._client
 
@@ -46,7 +48,7 @@ class LLMClient:
         client = self.get_client()
         
         kwargs = {
-            "model": "",
+            "model": "nvidia/nemotron-3.5-super-vl:free",
             "messages": messages,
             "stream": stream,
         }
@@ -111,7 +113,7 @@ class LLMClient:
 
         finish_reason : str | None = None 
         usage : TokenUsage | None = None
-        tool_calls : dict[int , dict[str,Any]]
+        tool_calls: dict[int, dict[str, Any]] = {}
 
         
         async for chunk in response:
@@ -120,7 +122,12 @@ class LLMClient:
                     prompt_tokens = chunk.usage.prompt_tokens,
                     completion_tokens = chunk.usage.completion_tokens,
                     total_tokens = chunk.usage.total_tokens,
-                    cached_tokens = chunk.usage.cached_tokens,
+                    cached_tokens = (
+                        chunk.usage.prompt_tokens_details.cached_tokens
+                        if chunk.usage.prompt_tokens_details
+                        and chunk.usage.prompt_tokens_details.cached_tokens is not None
+                        else 0
+                    ),
                 )
             if not chunk.choices:
                 continue
@@ -148,33 +155,36 @@ class LLMClient:
 
                         }
 
-                        if tool_call_delta.function:
-                            if tool_call_delta.function.name:
-                                tool_calls[idx]['name'] = tool_call_delta.function.name
-                                yield StreamEvent(
-                                    type = StreamEventType.TOOL_CALL_START,
-                                    tool_call_delta=ToolCallDelta(
-                                        call_id = tool_calls[idx]["id"],
-                                        name = tool_call_delta.function.name,
-                                    )
-                                )
+                    if tool_call_delta.id:
+                        tool_calls[idx]["id"] = tool_call_delta.id
 
-                            if tool_call_delta.function.arguments:
-                                tool_calls[idx]["arguments"] += tool_call_delta.funcation.arguments
-
-                                yield StreamEvent(
-                                    type = StreamEventType.TOOL_CALL_DELTA,
-                                    tool_call_delta=ToolCallDelta(
-                                        call_id=tool_calls[idx]["id"],
-                                        name = tool_call_delta.function.name,
-                                        arguments_delta= tool_call_delta.function.arguments
-                                    )
+                    function = tool_call_delta.function
+                    if function:
+                        if function.name:
+                            tool_calls[idx]["name"] = function.name
+                            yield StreamEvent(
+                                type=StreamEventType.TOOL_CALL_START,
+                                tool_call_delta=ToolCallDelta(
+                                    call_id=tool_calls[idx]["id"],
+                                    name=tool_calls[idx]["name"],
                                 )
+                            )
+
+                        if function.arguments:
+                            tool_calls[idx]["arguments"] += function.arguments
+                            yield StreamEvent(
+                                type=StreamEventType.TOOL_CALL_DELTA,
+                                tool_call_delta=ToolCallDelta(
+                                    call_id=tool_calls[idx]["id"],
+                                    name=tool_calls[idx]["name"],
+                                    arguments_delta=function.arguments,
+                                )
+                            )
 
         for idx ,tc in tool_calls.items():
             yield StreamEvent(
-                type = StreamEventType.TOOL_CALL_COMPLETE,
-                tool_Call=ToolCall(
+                type = StreamEventType.TOOL_CALL_FINISH,
+                tool_call=ToolCall(
                     call_id=tc['id'],
                     name=tc['name'],
                     arguments = parse_tool_call_arguments(tc['arguments']),
@@ -206,7 +216,7 @@ class LLMClient:
                 tool_calls.append(
                     ToolCall(
                         call_id = tc.id,
-                        name = tc.funcation.name,
+                        name = tc.function.name,
                         arguments = parse_tool_call_arguments(tc.function.arguments)
                     )
                 )
@@ -223,7 +233,7 @@ class LLMClient:
 
         return StreamEvent(
             type = StreamEventType.MESSAGE_COMPLETE,
-            text_Delta = text_delta,
+            text_delta = text_delta,
             finish_reason = choice.finish_reason,
             usage = usage
 

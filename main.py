@@ -5,19 +5,23 @@ import sys
 import click 
 from agent.agent import Agent
 from agent.events import AgentEventType
+from config.config import Config
+from config.loader import load_config
 from ui.tui import TUI, get_console
 
 
 console = get_console()
 
+# 
 
 class CLI:
-    def __init__(self):
+    def __init__(self, config : Config):
+        self.config = config
         self.agent : Agent | None = None 
         self.tui = TUI(console)
 
     async def run_single(self , message : str) -> str | None:
-        async with Agent() as agent:
+        async with Agent(self.config) as agent:
             self.agent = agent 
             return await self._process_message(message)
 
@@ -25,12 +29,12 @@ class CLI:
         self.tui.print_welcome(
             "Karan AI Agent",
             lines=[
-                f"model: mistralai/devstral-2512:free",
+                f"model: nvidia/nemotron-3.5-super-vl:free",
                 f"cwd: {Path.cwd()}",
                 "commands /help /config /approval /model /exit",
             ]
         )
-        async with Agent() as agent:
+        async with Agent(self.config) as agent:
             self.agent = agent
             while True:
                 try:
@@ -47,12 +51,11 @@ class CLI:
             
         
     def get_tool_kind(self,tool_name:str) -> str | None:
-        tool_kind  = None
-        tool = self.agent.tool_registry(tool_name)
-        if not tool:
-            tool_kind = None
+        if not self.agent:
+            return None
 
-        return tool_kind
+        tool = self.agent.tool_registry.get(tool_name)
+        return tool.kind.value if tool else None
 
     async def _process_message(self , message : str) -> str | None:
         if not self.agent:
@@ -79,7 +82,7 @@ class CLI:
                 console.print(f"\n[error]Error: {error}[/error]")
 
             elif event.type == AgentEventType.TOOL_CALL_START:
-                tool_name = event.data.get("tool_call","Unknown")
+                tool_name = event.data.get("name","Unknown")
 
                 tool_kind = self.get_tool_kind(tool_name)
                 self.tui.tool_call_start(
@@ -109,8 +112,30 @@ class CLI:
 
 @click.command
 @click.argument("prompt",required=False)
-def main(prompt : str | None, ):
-    cli = CLI()
+@click.option(
+    "--cwd",
+    "-c",
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+    help="Current working directory",
+)
+def main(prompt : str | None,
+         cwd : Path | None):
+    try:
+        config = load_config(cwd=cwd)
+    except Exception as e:
+        console.print(f"[error]Configuration Error: {e}[/error]")
+
+    errors = config.validate()
+
+    if errors:
+        for error in errors:
+            console.print(f"[error]{error}[/error]")
+
+        sys.exit(1)
+
+    cli = CLI(config)
+
+    # messages = [{"role": "user", "content": prompt}]
     if prompt:
         result = asyncio.run(cli.run_single(prompt))
         if result is None:

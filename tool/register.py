@@ -34,11 +34,7 @@ class ToolRegistry:
         return None
 
     def get_tools(self) -> list[Tool]:
-        tools : list[Tool] = []
-        for tool in self._tools:
-         tools.append(tool)
-
-        return tools
+        return list(self._tools.values())
 
     def get_schema(self) -> list[dict[str,Any]]:
         return [tool.to_openai_schema() for tool in self.get_tools()]
@@ -86,6 +82,6 @@ class ToolRegistry:
 def create_default_registry() -> ToolRegistry:
     registry = ToolRegistry()
     for tool_class in get_all_builtin_tools():
-        registry.register(tool_class)
+        registry.register(tool_class())
 
     return registry

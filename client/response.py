@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass 
+from dataclasses import dataclass, field
 from enum import Enum 
 import json
 from typing import Any
@@ -21,7 +21,7 @@ class ToolCallDelta:
 class ToolCall:
     call_id : str 
     name : str | None = None
-    arguments : str = ""
+    arguments : dict[str, Any] = field(default_factory=dict)
  
 
 
@@ -31,7 +31,7 @@ class StreamEventType(str,Enum):
     MESSAGE_COMPLETE  = "message_complete"
     ERROR = "error"
 
-    TOOL_CALL_START = "tool_Call_start" 
+    TOOL_CALL_START = "tool_call_start"
     TOOL_CALL_DELTA = "tool_call_delta"
     TOOL_CALL_FINISH = "tool_call_finish"
 
@@ -59,7 +59,7 @@ class StreamEvent:
     error : str | None = None 
     finish_reason : str | None = None 
     tool_call_delta : ToolCallDelta | None = None 
-    tool_Call : ToolCall | None = None 
+    tool_call : ToolCall | None = None
     usage : TokenUsage | None = None
 
 @dataclass
@@ -85,4 +85,3 @@ def parse_tool_call_arguments(arguments_str : str) -> dict[str,Any]:
         return json.loads(arguments_str)
     except json.JSONDecodeError:
         return {"raw_arguments":arguments_str}
-

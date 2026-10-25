@@ -18,7 +18,7 @@ from utils.text import truncate_text
 AGENT_THEME = Theme({
     "info": "cyan",
     "warning": "yellow",
-    "error": "red",
+    "error": "bright_red",
     "success": "green",
     "dim": "dim",
     "muted": "grey50",
@@ -50,7 +50,7 @@ class TUI:
         self.console = console or get_console()
         self._assistant_strem_open = False
         self._tool_args_by_call_id : dict[str,dict[str , Any]] = {}
-        self.path = Path.cwd()
+        self.cwd = Path.cwd()
     
     def begin_assistant(self) -> None:
         self.console.print()
@@ -114,7 +114,7 @@ class TUI:
 
         panel = Panel(
             (
-                self._render_args_table(name, display_args)
+                self._render_args_tab(name, display_args)
                 if display_args
                 else Text(
                     "(no args)",

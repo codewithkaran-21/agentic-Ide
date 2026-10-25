@@ -30,7 +30,7 @@ class MessageItem:
 class ContextManager:
     def __init__(self) -> None:
         self._system_prompt = get_system_prompt()
-        self._model_name = ""
+        self._model_name = "nvidia/nemotron-3.5-super-vl:free"
         self._messages : list[MessageItem] = []
 
     def add_user_message(self , content : str) -> None:
@@ -43,16 +43,16 @@ class ContextManager:
 
         self._messages.append(item)
 
-    def add_assistant_message(self , content : str , tool_calls : list[dict[str,Any]] | None = None) -> None:
+    def add_assistant_message(self , content : str | None , tool_calls : list[dict[str,Any]] | None = None) -> None:
         item = MessageItem(
-            role="user",
+            role="assistant",
             content=content or "",
-            token_count=count_tokens(content,
+            tool_calls=tool_calls or [],
+            token_count=count_tokens(content or "",
                                self._model_name)
-        ),
-        tool_calls = tool_calls or []
+        )
 
-        self._messaqges.append(item)
+        self._messages.append(item)
 
     def add_tool_result(self , tool_call_id : str , content : str)-> None:
         item = MessageItem(
@@ -62,7 +62,7 @@ class ContextManager:
             token_count=count_tokens(content,self._model_name)
         )
 
-        self._messaqges.append(item)
+        self._messages.append(item)
 
     def get_messages(self) -> list[dict[str , Any]]:
         messages = []
@@ -73,6 +73,6 @@ class ContextManager:
                 "content":self._system_prompt,
             })
 
-        for item in self._system_prompt:
+        for item in self._messages:
             messages.append(item.to_dict())
         return messages
