@@ -53,6 +53,7 @@ class TUI:
         self._tool_args_by_call_id : dict[str,dict[str , Any]] = {}
         self.config = config
         self.cwd = self.config.cwd
+        self._max_block_tokens = 2500
     
     def begin_assistant(self) -> None:
         self.console.print()
@@ -264,7 +265,10 @@ class TUI:
                     self._max_block_tokens,
                 )
 
-                blocks.append(Syntax(diff_display,'diff'))
+                blocks.append(Syntax(diff_display,'diff',theme="monokai",word_wrap=True))
+
+            if truncated:
+                blocks.append(Text("note: tool output was truncated", style="warning"))
                 
             else:
                 output_display = truncate_text(output,"",240,

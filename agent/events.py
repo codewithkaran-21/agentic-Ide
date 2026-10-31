@@ -88,6 +88,7 @@ class AgentEvent:
                 "output":result.output,
                 "error":result.error,
                 "metadata":result.metadata,
+                "diff":result.diff.to_diff() is result.diif else None,
                 "truncated":result.truncated,
             },
         )
