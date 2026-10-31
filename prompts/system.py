@@ -1,6 +1,10 @@
 from datetime import datetime
 
-def get_system_prompt():
+from config.config import Config
+
+def get_system_prompt(
+        config : Config,
+):
 
     parts = []
 
@@ -8,6 +12,12 @@ def get_system_prompt():
     parts.append(_get_agents_md_section())
     parts.append(_get_security_section())
     parts.append(_get_operational_section())
+
+    if config.devloper_instructions:
+        parts.append(_get_devloper_instructions_section(config.devloper_instructions))
+
+    if config.user_instructions:
+        parts.append(_get_user_instructions_section(config.user_instructions))
 
     return "\n\n".join(parts)
 
@@ -139,3 +149,22 @@ If completing the user's task requires writing or modifying files, your code and
 - Do not waste tokens by re-reading files after calling `apply_patch` on them. The tool call will fail if it didn't work. The same goes for making folders, deleting folders, etc.
 - Do not add inline comments within code unless explicitly requested.
 - Do not use one-letter variable names unless explicitly requested."""
+
+
+def _get_devloper_instructions_section(instructions: str) -> str:
+    return f"""
+# Project Instructions
+
+The following instructions were provided by the project maintainers:
+
+{instructions}
+
+Follow these instructions carefully as they contain important context about this specific project."""
+
+
+def _get_user_instructions_section(instructions: str) -> str:
+    return f"""# User Instructions
+
+The user has provided the following custom instructions:
+
+{instructions}"""

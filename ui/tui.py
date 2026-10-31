@@ -12,6 +12,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
 
+from config.config import Config
 from utils.paths import display_path_rel_to_cwd, resolve_path
 from utils.text import truncate_text
 
@@ -46,11 +47,12 @@ def get_console() -> Console:
     return _console
 
 class TUI:
-    def __init__(self , console : Console | None = None) -> None:
+    def __init__(self ,  config : Config,  console : Console | None = None) -> None:
         self.console = console or get_console()
         self._assistant_strem_open = False
         self._tool_args_by_call_id : dict[str,dict[str , Any]] = {}
-        self.cwd = Path.cwd()
+        self.config = config
+        self.cwd = self.config.cwd
     
     def begin_assistant(self) -> None:
         self.console.print()

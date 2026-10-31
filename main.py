@@ -12,7 +12,6 @@ from ui.tui import TUI, get_console
 
 console = get_console()
 
-# 
 
 class CLI:
     def __init__(self, config : Config):
@@ -30,7 +29,7 @@ class CLI:
             "Karan AI Agent",
             lines=[
                 f"model: nvidia/nemotron-3.5-super-vl:free",
-                f"cwd: {Path.cwd()}",
+                f"cwd: {self.config.cwd}",
                 "commands /help /config /approval /model /exit",
             ]
         )
@@ -54,7 +53,7 @@ class CLI:
         if not self.agent:
             return None
 
-        tool = self.agent.tool_registry.get(tool_name)
+        tool = self.agent.session.tool_registry.get(tool_name)
         return tool.kind.value if tool else None
 
     async def _process_message(self , message : str) -> str | None:
