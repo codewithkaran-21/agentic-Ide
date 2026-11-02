@@ -456,19 +456,6 @@ That makes it a promising foundation for a future AI IDE workflow.
 
 ---
 
-## License
-
-This project is licensed under the MIT License. See `LICENSE` for details.
-
----
-
-If you want, I can also generate a second version of this README tailored more toward:
-
-- GitHub landing-page polish,
-- developer onboarding,
-- or a more technical architecture doc for contributors.
-
-The current README is intentionally written to match the project’s real maturity: ambitious, practical, and still evolving.
 
 
 
