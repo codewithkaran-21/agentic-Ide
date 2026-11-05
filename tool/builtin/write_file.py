@@ -9,7 +9,7 @@ class WriteFileParams(BaseModel):
     )
 
     content : str = Field(..., description="Content to write to the file")
-    craete_directories : bool = Field(True, description="Create parent directories if they don't exist")
+    create_directories : bool = Field(True, description="Create parent directories if they don't exist")
 
 class WriteFileTool(Tool):
     name = "write_file"
@@ -27,34 +27,15 @@ class WriteFileTool(Tool):
         path = resolve_path(invocation.cwd , params.path)
 
         is_new_file = not path.exists()
-        old_content = ""
-
-        if not is_new_file:
-            try:
-                old_content = path.read_text(encoding="utf-8")
-
-            except :
-                pass
-
-        diff = FileDiff(
-            path=path,
-            old_content=old_content,
-            new_content=params.content,
-            is_new_file=is_new_file,
-        )
-
         action = "Created" if is_new_file else "Updated"
 
         return ToolConfirmation(
             tool_name=self.name,
             params=invocation.params,
             description=f"{action} file: {path}",
-            diff=diff,
-            affected_paths=[path],
-            is_dangerous=not is_new_file,
         )
 
-    async def exectue(self , invocation : ToolInvocation) -> ToolResult:
+    async def execute(self , invocation : ToolInvocation) -> ToolResult:
         params = WriteFileParams(**invocation.params)
         path = resolve_path(invocation.cwd, params.path)
 
@@ -77,7 +58,7 @@ class WriteFileTool(Tool):
                     f"Parent directory does not exist: {path.parent}"
                 )
 
-            path.write_bytes(params.content , encoding="utf-8")
+            path.write_text(params.content, encoding="utf-8")
 
             action = "Created" if is_new_file else "Updated"
             line_count = len(params.content.splitlines())
@@ -99,7 +80,6 @@ class WriteFileTool(Tool):
             )
         except OSError as e:
             return ToolResult.error_result(f"Failed to write file: {e}")
-
 
 
 

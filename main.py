@@ -16,8 +16,9 @@ console = get_console()
 class CLI:
     def __init__(self, config : Config):
         self.config = config
-        self.agent : Agent | None = None 
-        self.tui = TUI(console)
+        self.agent : Agent | None = None
+        self.config = config 
+        self.tui = TUI(config,console)
 
     async def run_single(self , message : str) -> str | None:
         async with Agent(self.config) as agent:

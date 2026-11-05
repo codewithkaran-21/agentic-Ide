@@ -13,7 +13,7 @@ from rich.table import Table
 from rich.theme import Theme
 
 from config.config import Config
-from utils.paths import display_path_rel_to_cwd, resolve_path
+from utils.paths import display_path_rel_to_cwd
 from utils.text import truncate_text
 
 AGENT_THEME = Theme({
@@ -216,9 +216,7 @@ class TUI:
                            metadata : dict[str,Any] | None,
                            diff : str | None,
                            truncated : bool) -> None:
-        
         border_style = f"tool.{tool_kind}" if tool_kind else "tool"
-        status_icon = "✔️" if success else "✖️"
         status_style = "success" if success else "error"
         title = Text.assemble(
             ("🟡","muted"),
@@ -227,60 +225,78 @@ class TUI:
             (f"#{call_id[:8]}","muted")
         )
 
-        primary_path = None 
+        args = self._tool_args_by_call_id.get(call_id , {})
         blocks = []
-        if isinstance(metadata,dict) and isinstance(metadata.get("path") , str):
-            primary_path = metadata.get("path")
+        primary_path = (
+            metadata.get("path")
+            if isinstance(metadata, dict) and isinstance(metadata.get("path"), str)
+            else None
+        )
+        rendered_output = False
 
-        if name == "read_file" and success:
-            if primary_path:
-                start_line , code = self._extract_read_file_code(output)
+        if name == "shell":
+            command = args.get("command")
+            if isinstance(command, str) and command.strip():
+                blocks.append(Text(f"$ {command.strip()}", style="muted"))
+
+        if name == "read_file" and success and primary_path:
+            parsed = self._extract_read_file_code(output)
+            if parsed:
+                start_line, code = parsed
                 shown_start = metadata.get("shown_start")
                 shown_end = metadata.get("shown_end")
                 total_lines = metadata.get("total_lines")
-                pl = self._guess_language(primary_path)
+                language = self._guess_language(primary_path)
 
-                header_parts = [display_path_rel_to_cwd(primary_path , self.cwd)]
-                header_parts.append(" • ")
+                header = display_path_rel_to_cwd(primary_path, self.cwd)
                 if shown_start and shown_end and total_lines:
-                    header_parts.append(f"lines {shown_start}-{shown_end} of {total_lines}")
-                header = "".join(header_parts)
-                blocks.append(Text(header,style="muted"))
-                blocks.append(Syntax(
-                    code,
-                    pl,
-                    theme="monokai",
-                    line_numbers = True,
-                    start_line = start_line,
-                    word_wrap = False
-                ))
+                    header += f" • lines {shown_start}-{shown_end} of {total_lines}"
+                blocks.append(Text(header, style="muted"))
+                blocks.append(
+                    Syntax(
+                        code,
+                        language,
+                        theme="monokai",
+                        line_numbers=True,
+                        start_line=start_line,
+                        word_wrap=False,
+                    )
+                )
+                rendered_output = True
 
-            elif name == "write_file" and success and diff:
-                output_line = output.strip() if output.strip() else "Completed"
-                blocks.append(Text(output_line , style="muted"))
-                diff_text = diff
-                diff_display = truncate_text(
-                    diff_text,
+        elif name == "write_file" and success and diff:
+            blocks.append(Text(output.strip() or "Completed", style="muted"))
+            diff_display = truncate_text(
+                diff,
+                self.config.model_name,
+                self._max_block_tokens,
+            )
+            blocks.append(Syntax(diff_display, "diff", theme="monokai", word_wrap=True))
+            rendered_output = True
+
+        if not rendered_output:
+            display_output = output
+            if error and error not in display_output:
+                display_output = f"{display_output}\n{error}".strip()
+            if display_output:
+                output_display = truncate_text(
+                    display_output,
                     self.config.model_name,
                     self._max_block_tokens,
                 )
-
-                blocks.append(Syntax(diff_display,'diff',theme="monokai",word_wrap=True))
-
-            if truncated:
-                blocks.append(Text("note: tool output was truncated", style="warning"))
-                
-            else:
-                output_display = truncate_text(output,"",240,
-                                     blocks.append(Syntax(
-                                         output_display,
-                                         'text',
-                                         theme="monokai",
-                                         word_wrap=False
-                                     )))
+                blocks.append(
+                    Syntax(
+                        output_display,
+                        "text",
+                        theme="monokai",
+                        word_wrap=name == "shell",
+                    )
+                )
+            elif success:
+                blocks.append(Text("Completed", style="muted"))
 
         if truncated:
-            blocks.append(Text('note tool output was truncated',style="warning"))
+            blocks.append(Text("Note: tool output was truncated", style="warning"))
 
         panel = Panel(
             Group(

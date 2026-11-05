@@ -1,5 +1,6 @@
 from typing import Any
 
+from config.config import Config
 from prompts.system import get_system_prompt
 from dataclasses import dataclass, field
 
@@ -28,8 +29,9 @@ class MessageItem:
         return result
 
 class ContextManager:
-    def __init__(self) -> None:
-        self._system_prompt = get_system_prompt()
+    def __init__(self , config: Config) -> None:
+        self._system_prompt = get_system_prompt(config)
+        self.config = config
         self._model_name = "nvidia/nemotron-3.5-super-vl:free"
         self._messages : list[MessageItem] = []
 
