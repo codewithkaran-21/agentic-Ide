@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from tool.base import Tool, ToolInvocation, ToolKind, ToolResult
-from utils.paths import is_bianry_file, resolve_path
+from utils.paths import is_binary_file, resolve_path
 from utils.text import count_tokens, truncate_text
 
 
@@ -53,7 +53,7 @@ class ReadFileTool(Tool):
                 f"Maximum file size {self.MAX_FILE_SIZE / (1024*1024):.0f}MB"
             )
 
-        if is_bianry_file(path):
+        if is_binary_file(path):
             file_size_mb = file_size / (1024*1024)
             size_str = (
                 f"{file_size_mb:.2f}MB" if file_size_mb >= 1 else f"{file_size} bytes"

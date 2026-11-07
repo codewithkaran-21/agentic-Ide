@@ -70,8 +70,11 @@ class TUI:
 
     def _ordered_args(self , tool_name : str , args : dict[str,Any]) -> list[tuple]:
         _PREFERRED_ORDER = {
-            "read_file" : ["path" , "offset","limnit"],
+            "read_file" : ["path" , "offset","limit"],
             "write_file": ["path", "create_directories", "content"],
+            "edit" : ["path","replace_all","old_string","new_string"],
+            "shell":["command","timeout","cwd"],
+            "list_dir":["path","include_hidden"],
         }
 
         preferred = _PREFERRED_ORDER.get(tool_name,[])
@@ -211,13 +214,20 @@ class TUI:
             )
         )
 
-    def tool_call_complete(self , call_id : str , name : str , tool_kind : str | None,
-                          success: bool , output : str , error : str | None,
-                           metadata : dict[str,Any] | None,
-                           diff : str | None,
-                           truncated : bool) -> None:
+    def tool_call_complete(self , 
+                           call_id : str ,
+                            name : str ,
+                            tool_kind : str | None,
+                            success: bool ,
+                            output : str , error : str | None,
+                            metadata : dict[str,Any] | None,
+                            diff : str | None,
+                            truncated : bool) -> None:
+        
         border_style = f"tool.{tool_kind}" if tool_kind else "tool"
+
         status_style = "success" if success else "error"
+
         title = Text.assemble(
             ("🟡","muted"),
             (name , "tool"),
@@ -226,23 +236,19 @@ class TUI:
         )
 
         args = self._tool_args_by_call_id.get(call_id , {})
-        blocks = []
-        primary_path = (
-            metadata.get("path")
-            if isinstance(metadata, dict) and isinstance(metadata.get("path"), str)
-            else None
-        )
-        rendered_output = False
+        primary_path =  None 
 
-        if name == "shell":
-            command = args.get("command")
-            if isinstance(command, str) and command.strip():
-                blocks.append(Text(f"$ {command.strip()}", style="muted"))
+        blocks = []
+
+        if isinstance(metadata,dict) and isinstance(metadata.get("path"),str):
+            primary_path = metadata.get("path")
+
 
         if name == "read_file" and success and primary_path:
-            parsed = self._extract_read_file_code(output)
-            if parsed:
-                start_line, code = parsed
+
+            if primary_path:
+                start_line, code = self._extract_read_file_code(output)
+
                 shown_start = metadata.get("shown_start")
                 shown_end = metadata.get("shown_end")
                 total_lines = metadata.get("total_lines")
@@ -262,26 +268,11 @@ class TUI:
                         word_wrap=False,
                     )
                 )
-                rendered_output = True
 
-        elif name == "write_file" and success and diff:
-            blocks.append(Text(output.strip() or "Completed", style="muted"))
-            diff_display = truncate_text(
-                diff,
-                self.config.model_name,
-                self._max_block_tokens,
-            )
-            blocks.append(Syntax(diff_display, "diff", theme="monokai", word_wrap=True))
-            rendered_output = True
-
-        if not rendered_output:
-            display_output = output
-            if error and error not in display_output:
-                display_output = f"{display_output}\n{error}".strip()
-            if display_output:
+            else:
                 output_display = truncate_text(
-                    display_output,
-                    self.config.model_name,
+                    output,
+                    "",
                     self._max_block_tokens,
                 )
                 blocks.append(
@@ -289,12 +280,75 @@ class TUI:
                         output_display,
                         "text",
                         theme="monokai",
-                        word_wrap=name == "shell",
+                        word_wrap=False,
                     )
                 )
-            elif success:
-                blocks.append(Text("Completed", style="muted"))
 
+        elif name  in {"write_file" , "edit"} and success and diff:
+            output_line = output.strip() if output.strip() else "Completed"
+            blocks.append(Text(output_line, style="muted"))
+            diff_text = diff
+            diff_display = truncate_text(
+                diff_text,
+                self.config.model_name,
+                self._max_block_tokens,
+            )
+            blocks.append(
+                Syntax(
+                    diff_display,
+                    "diff",
+                    theme="monokai",
+                    word_wrap=True,
+                )
+            )
+
+        elif name == "shell" and success:
+            command = args.get("command")
+
+            if isinstance(command,str) and isinstance(command.strip()):
+                blocks.append(Text(f"$ {command.strip()}", style="muted"))
+
+            output_display = truncate_text(
+                output,
+                self.config.model_name,
+                self._max_block_tokens
+            )
+
+            blocks.append(
+                Syntax(
+                    output_display,
+                    "text",
+                    theme="monokai",
+                    word_wrap=True,
+                )
+            )
+
+        elif name == "list_dir" and success:
+            enteries = metadata.get("enteries")
+
+            path = metadata.get("path")
+            summary = []
+
+            if isinstance(path , str):
+                summary.append(path)
+
+            if summary:
+                blocks.append(Text(" • ".join(summary), style="muted"))
+
+            output_display = truncate_text(
+                output,
+                self.config.model_name,
+                self._max_block_tokens
+            )
+
+            blocks.append(
+                Syntax(
+                    output_display,
+                    "text",
+                    theme="monokai",
+                    word_wrap=True
+                )
+            )
         if truncated:
             blocks.append(Text("Note: tool output was truncated", style="warning"))
 

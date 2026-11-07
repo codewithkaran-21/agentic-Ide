@@ -30,7 +30,7 @@ def display_path_rel_to_cwd(path : str , cwd : Path | None) -> str:
     return str(p)
 
 
-def is_bianry_file(path : str | Path) -> bool:
+def is_binary_file(path : str | Path) -> bool:
     try:
         with open(path , "rb") as f:
             chunk = f.read(8192)
