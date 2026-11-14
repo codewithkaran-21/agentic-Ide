@@ -4,6 +4,7 @@ from tool.builtin.grep import GrepTool
 from tool.builtin.list_dir import ListDirTool
 from tool.builtin.read_file import ReadFileTool
 from tool.builtin.shell import ShellTool
+from tool.builtin.web_fetch import WebFetchTool
 from tool.builtin.web_search import WebSearchTool
 from tool.builtin.write_file import WriteFileTool
 
@@ -14,7 +15,8 @@ __all__  = ["ReadFileTool",
             "ListDirTool",
             "GrepTool",
             "GlobTool",
-            "WebSearchTool"]
+            "WebSearchTool",
+            "WebFetchTool"]
 
 def get_all_builtin_tools() -> list[type]:
     return [
@@ -25,5 +27,5 @@ def get_all_builtin_tools() -> list[type]:
         ListDirTool,
         GrepTool,
         GlobTool,
-        WebSearchTool
-    ]
+        WebSearchTool,
+        WebFetchTool,]
