@@ -11,7 +11,7 @@ class GlobParams(BaseModel):
 
     pattern : str = Field(...,description="Glob pattern to match")
 
-    path : str = Field("." , desciption = "Directory to search in (default: current directory)")
+    path : str = Field("." , description = "Directory to search in (default: current directory)")
 
 
 class GlobTool(Tool):
@@ -63,7 +63,7 @@ class GlobTool(Tool):
         )
 
     def _find_files(self , search_path : Path) -> list[Path]:
-        
+
         files = []
 
         for root , dirs , filenames in os.walk(search_path):
